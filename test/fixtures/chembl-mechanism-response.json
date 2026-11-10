@@ -1,0 +1,15 @@
+{
+  "mechanisms": [
+    {
+      "record_id": 7001,
+      "molecule_chembl_id": "CHEMBL269671",
+      "target_chembl_id": "CHEMBL9001",
+      "mechanism_of_action": "Example inhibitor of parasite enzyme",
+      "action_type": "INHIBITOR",
+      "direct_interaction": true,
+      "mechanism_comment": "Curated example annotation",
+      "site_id": null
+    }
+  ],
+  "page_meta": { "limit": 1000, "next": null, "offset": 0, "total_count": 1 }
+}

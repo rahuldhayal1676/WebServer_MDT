@@ -1,0 +1,17 @@
+{
+  "page_meta": { "limit": 100, "next": null, "offset": 0, "previous": null, "total_count": 1 },
+  "molecules": [
+    {
+      "molecule_chembl_id": "CHEMBL1450",
+      "pref_name": "ATOVAQUONE",
+      "molecule_type": "Small molecule",
+      "max_phase": 4,
+      "molecule_synonyms": [{ "molecule_synonym": "Atovaquone" }],
+      "molecule_structures": {
+        "standard_inchi_key": "KUCQYCKVKVOKAY-CTYIDZIISA-N",
+        "canonical_smiles": "O=C1C(O)=C([C@H]2CC[C@H](c3ccc(Cl)cc3)CC2)C(=O)c2ccccc21"
+      },
+      "molecule_properties": { "full_molformula": "C22H19ClO3", "full_mwt": 366.84 }
+    }
+  ]
+}

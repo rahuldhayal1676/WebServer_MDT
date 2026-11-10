@@ -1,0 +1,19 @@
+WEBSERVER_MDT — STAGE 3.12
+
+1. Extract this ZIP to a new folder.
+2. Open the extracted `WebServer_MDT_Stage3_12` folder (the one containing `package.json`).
+3. Open Terminal / PowerShell in that folder.
+4. Check Node.js: `node -v` (Node 20.19+ or 22.12+).
+5. Install dependencies: `npm ci`.
+6. Run automated tests: `npm test`.
+7. Run lint: `npm run lint`.
+8. Build: `npm run build`.
+9. Start the dev server: `npm run dev`.
+10. Open the local URL Vite prints.
+
+IMPORTANT
+- Do not copy `node_modules` from an older project or another operating system.
+- The app requires live internet access to PubChem, ChEMBL, UniChem and UniProtKB.
+- Automated tests use mocked API responses; they do not prove that external databases are available at runtime.
+- If an activity scan reaches the 5,000-record limit or a page fails, the app labels it incomplete rather than reporting an exhaustive result.
+- See README.md and STAGE_3_12_FIX_NOTES.md for details.

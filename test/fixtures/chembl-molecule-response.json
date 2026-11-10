@@ -1,0 +1,26 @@
+{
+  "page_meta": {
+    "limit": 1000,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+  },
+  "molecules": [
+    {
+      "molecule_chembl_id": "CHEMBL25",
+      "pref_name": "ASPIRIN",
+      "molecule_type": "Small molecule",
+      "max_phase": 4,
+      "first_approval": 1899,
+      "molecule_structures": {
+        "standard_inchi_key": "BSYNRYMUTXBXSQ-UHFFFAOYSA-N",
+        "canonical_smiles": "CC(=O)Oc1ccccc1C(=O)O"
+      },
+      "molecule_properties": {
+        "full_molformula": "C9H8O4",
+        "full_mwt": 180.16
+      }
+    }
+  ]
+}

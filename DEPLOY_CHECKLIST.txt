@@ -1,0 +1,13 @@
+WEBSERVER_MDT PUBLIC DEMO CHECKLIST
+
+[ ] Push the contents of this folder to a GitHub repository.
+[ ] Import the repository into Netlify.
+[ ] Confirm build command: npm run build
+[ ] Confirm publish directory: dist
+[ ] Confirm functions directory: netlify/functions
+[ ] Wait for a successful production deploy.
+[ ] Open the public netlify.app URL on another device/network.
+[ ] Test compound search and protein discovery.
+[ ] Keep a clearly labelled screen recording as a backup.
+
+Do not present localhost as the live demo. Do not describe provisional UniProt name matches as validated drug targets.

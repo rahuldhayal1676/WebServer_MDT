@@ -1,0 +1,11 @@
+{
+  "primaryAccession": "P12345",
+  "uniProtkbId": "EXAMPLE_PLAF7",
+  "entryType": "UniProtKB reviewed (Swiss-Prot)",
+  "proteinDescription": {
+    "recommendedName": { "fullName": { "value": "Example parasite protein" } }
+  },
+  "genes": [{ "geneName": { "value": "example1" } }],
+  "organism": { "scientificName": "Plasmodium falciparum", "taxonId": 5833 },
+  "sequence": { "value": "MALWMRLLPLLALLALWGPGPGG", "length": 22 }
+}

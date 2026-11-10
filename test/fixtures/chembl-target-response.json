@@ -1,0 +1,25 @@
+{
+  "targets": [
+    {
+      "target_chembl_id": "CHEMBL9001",
+      "pref_name": "Example Plasmodium falciparum protein",
+      "target_type": "SINGLE PROTEIN",
+      "organism": "Plasmodium falciparum",
+      "target_components": [
+        {
+          "accession": "P12345",
+          "component_id": 9001,
+          "component_type": "PROTEIN",
+          "description": "Example protein component"
+        }
+      ]
+    },
+    {
+      "target_chembl_id": "CHEMBL364",
+      "pref_name": "Plasmodium falciparum",
+      "target_type": "ORGANISM",
+      "organism": "Plasmodium falciparum",
+      "target_components": []
+    }
+  ]
+}

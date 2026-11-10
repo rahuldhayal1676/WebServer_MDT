@@ -1,0 +1,39 @@
+{
+  "activities": [
+    {
+      "activity_id": 10001,
+      "target_chembl_id": "CHEMBL9001",
+      "target_pref_name": "Example Plasmodium falciparum protein",
+      "target_organism": "Plasmodium falciparum",
+      "target_tax_id": 5833,
+      "assay_chembl_id": "CHEMBLASSAY1",
+      "assay_description": "Example single-protein assay",
+      "assay_type": "B",
+      "standard_type": "IC50",
+      "standard_relation": "=",
+      "standard_value": "125",
+      "standard_units": "nM",
+      "pchembl_value": "6.90",
+      "document_chembl_id": "CHEMBLDOC1",
+      "document_year": 2020
+    },
+    {
+      "activity_id": 10002,
+      "target_chembl_id": "CHEMBL364",
+      "target_pref_name": "Plasmodium falciparum",
+      "target_organism": "Plasmodium falciparum",
+      "target_tax_id": 5833,
+      "assay_chembl_id": "CHEMBLASSAY2",
+      "assay_description": "Whole-organism antimalarial assay",
+      "assay_type": "F",
+      "standard_type": "IC50",
+      "standard_relation": "=",
+      "standard_value": "12",
+      "standard_units": "nM",
+      "pchembl_value": "7.92",
+      "document_chembl_id": "CHEMBLDOC2",
+      "document_year": 2021
+    }
+  ],
+  "page_meta": { "limit": 500, "next": null, "offset": 0, "previous": null, "total_count": 2 }
+}

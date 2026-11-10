@@ -1,0 +1,33 @@
+{
+  "activities": [
+    {
+      "activity_id": 10991473,
+      "molecule_chembl_id": "CHEMBL2069840",
+      "assay_chembl_id": "CHEMBL2072521",
+      "assay_description": "Inhibition of CYP3A4",
+      "assay_type": "A",
+      "standard_type": "IC50",
+      "standard_relation": "=",
+      "standard_value": "1000.0",
+      "standard_units": "nM",
+      "pchembl_value": "6.00",
+      "activity_comment": null,
+      "data_validity_comment": null,
+      "target_chembl_id": "CHEMBL340",
+      "target_pref_name": "Cytochrome P450 3A4",
+      "target_organism": "Homo sapiens",
+      "target_type": "SINGLE PROTEIN",
+      "document_chembl_id": "CHEMBL2069253",
+      "src_description": "Scientific Literature",
+      "doc_journal": "Bioorganic & Medicinal Chemistry Letters",
+      "doc_year": 2012
+    }
+  ],
+  "page_meta": {
+    "limit": 1,
+    "next": null,
+    "offset": 0,
+    "previous": null,
+    "total_count": 1
+  }
+}
