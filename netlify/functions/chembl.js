@@ -1,4 +1,4 @@
-import { eventMethod, fetchUpstreamJson, getQueryParams, jsonResponse } from './_shared.js';
+import { adaptLambdaHandler, eventMethod, fetchUpstreamJson, getQueryParams, jsonResponse } from './_shared.js';
 
 const CH_EMBL_BASE = 'https://www.ebi.ac.uk/chembl/api/data';
 const ALLOWED_ENDPOINTS = new Set(['molecule', 'status', 'activity', 'target', 'mechanism', 'target-record']);
@@ -40,4 +40,6 @@ export async function handler(event = {}) {
   });
 }
 
-export default { handler };
+export default async function netlifyHandler(request) {
+  return adaptLambdaHandler(request, handler);
+}

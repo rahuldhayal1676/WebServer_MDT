@@ -137,3 +137,22 @@ export function getAllowedRedirectAccession(location) {
     return null;
   }
 }
+
+/** Adapt the existing Lambda-style business logic to Netlify's modern Request/Response API. */
+export async function adaptLambdaHandler(request, lambdaHandler) {
+  const url = new URL(request.url);
+  const event = {
+    httpMethod: request.method,
+    rawUrl: request.url,
+    rawQuery: url.search.slice(1),
+    queryStringParameters: Object.fromEntries(url.searchParams.entries()),
+    headers: Object.fromEntries(request.headers.entries()),
+    body: null,
+    isBase64Encoded: false
+  };
+  const result = await lambdaHandler(event, {});
+  return new Response(result?.body ?? '', {
+    status: result?.statusCode ?? 200,
+    headers: result?.headers ?? {}
+  });
+}

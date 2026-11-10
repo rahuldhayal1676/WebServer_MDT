@@ -1,4 +1,4 @@
-import { eventMethod, fetchUpstreamJson, getQueryParams, jsonResponse } from './_shared.js';
+import { adaptLambdaHandler, eventMethod, fetchUpstreamJson, getQueryParams, jsonResponse } from './_shared.js';
 
 export async function handler(event = {}) {
   if (eventMethod(event) !== 'GET') return jsonResponse(405, { error: 'Only GET requests are supported.', code: 'METHOD_NOT_ALLOWED' }, { Allow: 'GET' });
@@ -14,4 +14,6 @@ export async function handler(event = {}) {
   return jsonResponse(200, result.payload, { 'X-WebServer-MDT-Proxy': 'unichem', 'X-UniChem-Upstream-Status': '200' });
 }
 
-export default { handler };
+export default async function netlifyHandler(request) {
+  return adaptLambdaHandler(request, handler);
+}
