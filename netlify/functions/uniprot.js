@@ -1,5 +1,4 @@
 /** Same-origin proxy for UniProtKB accession and species-restricted name searches. */
-import { adaptLambdaHandler } from './_shared.js';
 export const handler = async (event) => {
   const params = new URLSearchParams(event.rawQuery || new URLSearchParams(event.queryStringParameters || {}).toString());
   const accession = String(params.get("accession") || "").trim().toUpperCase();
@@ -82,9 +81,4 @@ function jsonResponse(statusCode, payload) {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
     body: JSON.stringify(payload)
   };
-}
-
-
-export default async function netlifyHandler(request) {
-  return adaptLambdaHandler(request, handler);
 }

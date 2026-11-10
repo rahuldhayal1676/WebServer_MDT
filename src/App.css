@@ -1295,3 +1295,7 @@
   .protein-complex-subunit-heading { flex-direction: column; }
   .parent-molecule-banner { font-size: 10px; }
 }
+
+.evidence-band { font-style: normal; font-weight: 600; }
+.evidence-weak { color: #8a5a00; }
+.evidence-potent { color: #0f766e; }

@@ -5,7 +5,7 @@ import {
   Atom, Activity, ShieldCheck, ExternalLink,
   ArrowUpRight, Layers, Network, CircleHelp, Clock3
 } from "lucide-react";
-import { resolvePubChemCompound, resolveChemblMoleculeByInchiKey, retrieveChemblActivities, retrievePfProteinTargets, ApiError } from "./api.js";
+import { resolvePubChemCompound, resolveChemblMoleculeByInchiKey, retrieveChemblActivities, retrievePfProteinTargets, describeEvidenceRecord, compareInchiKeys, ApiError } from "./api.js";
 import "./App.css";
 
 const suggestedCompounds = ["Chloroquine", "Artemisinin", "Pyrimethamine", "Mefloquine"];
@@ -101,13 +101,13 @@ function ProteinCandidateCard({ protein, mechanismStatus = "available" }) {
         <span className="protein-record-count">{mechanismStatus === "unavailable" ? "MOA unavailable" : mechanismStatus === "partial" ? `${protein.mechanismCount} MOA · partial` : `${protein.mechanismCount} MOA`} · {protein.activityCount} activity</span>
       </div>
       <div className="protein-metadata-grid">
-        <div><span>UNIPROT ACCESSION</span><strong>{protein.accession || "Not supplied"}</strong></div>
+        <div><span>{protein.accessionLabel || "UNIPROT ACCESSION"}</span><strong>{protein.accession || "Not supplied"}</strong></div>
         <div><span>SEQUENCE LENGTH</span><strong>{sequence ? `${protein.uniprot.sequenceLength} aa` : "Not retrieved"}</strong></div>
-        <div><span>UNIPROT ORGANISM</span><strong>{protein.uniprot?.organism || "Not confirmed"}</strong></div>
+        <div><span>{protein.sequenceSource === "NCBI RefSeq" ? "SEQUENCE ORGANISM" : "UNIPROT ORGANISM"}</span><strong>{protein.uniprot?.organism || "Not confirmed"}</strong></div>
         <div><span>GENE</span><strong>{protein.uniprot?.geneName || "Not supplied"}</strong></div>
       </div>
       <div className="protein-candidate-links">
-        {protein.accession && <a href={`https://www.uniprot.org/uniprotkb/${encodeURIComponent(protein.accession)}/entry`} target="_blank" rel="noreferrer">Open UniProtKB entry <ExternalLink size={11}/></a>}
+        {protein.accession && (protein.sequenceSource === "NCBI RefSeq" ? <a href={`https://www.ncbi.nlm.nih.gov/protein/${encodeURIComponent(protein.uniprot?.accession || "XP_001351479.1")}`} target="_blank" rel="noreferrer">Open NCBI RefSeq protein <ExternalLink size={11}/></a> : <a href={`https://www.uniprot.org/uniprotkb/${encodeURIComponent(protein.accession)}/entry`} target="_blank" rel="noreferrer">Open UniProtKB entry <ExternalLink size={11}/></a>)}
         {protein.chemblId && <a href={`https://www.ebi.ac.uk/chembl/target_report_card/${encodeURIComponent(protein.chemblId)}/`} target="_blank" rel="noreferrer">Open ChEMBL target <ExternalLink size={11}/></a>}
       </div>
       {protein.candidateStatus && <p className="stage-note">{protein.candidateStatus}</p>}
@@ -116,7 +116,7 @@ function ProteinCandidateCard({ protein, mechanismStatus = "available" }) {
           <button type="button" className="secondary-btn sequence-toggle" onClick={() => setShowSequence(open => !open)}>
             {showSequence ? "Hide protein sequence" : "Show protein sequence"}
           </button>
-          {showSequence && <pre className="protein-sequence">&gt;{protein.accession} | {title} | {protein.uniprot.organism}{"\n"}{sequence.match(/.{1,60}/g)?.join("\n") || sequence}</pre>}
+          {showSequence && <pre className="protein-sequence">&gt;{protein.uniprot?.accession || protein.accession} | {title} | {protein.uniprot.organism} | {protein.sequenceSource || "UniProtKB"}{"\n"}{sequence.match(/.{1,60}/g)?.join("\n") || sequence}</pre>}
         </>
       ) : (
         <p className="protein-sequence-warning">{protein.sequenceError || "UniProt did not return a sequence for this candidate."}</p>
@@ -136,13 +136,19 @@ function ProteinCandidateCard({ protein, mechanismStatus = "available" }) {
       {protein.evidence?.length > 0 && (
         <div className="protein-evidence-summary">
           <strong>ChEMBL evidence measurements</strong>
-          {protein.evidence.slice(0, 4).map((item, index) => (
-            <span key={item.activityId || index}>
-              {item.standardType || "Measurement not specified"}: {[item.relation, item.value, item.units].filter(Boolean).join(" ") || "Value not reported"}
-              {item.pchemblValue ? ` · pChEMBL ${item.pchemblValue}` : ""}
-            </span>
-          ))}
+          {protein.evidence.slice(0, 4).map((item, index) => {
+            const described = describeEvidenceRecord(item);
+            return (
+              <span key={item.activityId || index} title={described.note}>
+                {described.text}
+                {item.pchemblValue ? ` · pChEMBL ${item.pchemblValue}` : ""}
+                {described.band === "inactive-or-weak" && <em className="evidence-band evidence-weak"> · tested, weak or inactive</em>}
+                {described.band === "potent" && <em className="evidence-band evidence-potent"> · potent in this assay</em>}
+              </span>
+            );
+          })}
           {protein.evidence.length > 4 && <small>Showing 4 of {protein.evidence.length} linked records.</small>}
+          <small>A ChEMBL record means the compound was tested against this protein, not that it is a target. Weak or inactive results are labelled; bands are heuristic.</small>
         </div>
       )}
     </article>
@@ -780,6 +786,12 @@ function App() {
                   {chemblResult.statusWarning && <p className="stage-note">{chemblResult.statusWarning}</p>}
                   {chemblResult.exactLookupWarning && <p className="stage-note">Exact InChIKey lookup note: {chemblResult.exactLookupWarning} Any displayed candidate was obtained through a separate non-exact fallback and must be reviewed.</p>}
                   {chemblResult.fallbackWarning && <p className="stage-note">{chemblResult.fallbackWarning}</p>}
+                  {chemblResult.matchType && chemblResult.matchType !== "exact-inchi-key" && chemblResult.molecules?.[0] && (() => {
+                    const relation = compareInchiKeys(result?.inchiKey, chemblResult.molecules[0].standardInchiKey);
+                    if (relation === "connectivity-differs") return <p className="stage-note">Structure comparison: the connectivity part of the PubChem and ChEMBL InChIKeys differs. This usually means a different tautomer, salt or charge state, or a drawing difference, rather than a different compound. Compare both structures before relying on this match.</p>;
+                    if (relation === "stereo-or-isotope-only") return <p className="stage-note">Structure comparison: the connectivity matches; only stereochemistry or isotope layers differ.</p>;
+                    return null;
+                  })()}
                 </>
               )}
             </div>
@@ -862,7 +874,27 @@ function App() {
                       ))}
                     </div>
                   )}
-                  {proteinResult.proteins.length === 0 && (proteinResult.uniprotNameCandidates || []).length === 0 && (
+                  {(proteinResult.referenceTargets || []).length > 0 && (
+                    <div className="protein-candidate-list reference-target-list">
+                      <div className="activity-groups-header">
+                        <strong>Curated reference targets with organism-level supporting evidence</strong>
+                        <span>These are established reference mappings, not ChEMBL activity records assigned directly to the protein. Assay descriptions are supporting context. The 3D7 sequence is retrieved from NCBI RefSeq; the historical UniProt cross-reference is marked inactive. This mapping is a literature-based reference built into the app for pyrimethamine only; it is not discovered from the data.</span>
+                      </div>
+                      {proteinResult.referenceTargets.map(protein => (
+                        <div key={`reference-${protein.chemblId}`}>
+                          <ProteinCandidateCard protein={protein} mechanismStatus="available"/>
+                          <div className="protein-candidate-links">
+                            <a href="https://www.guidetoimmunopharmacology.org/GRAC/ObjectDisplayForward?objectId=2981" target="_blank" rel="noreferrer">Open curated PfDHFR-TS reference <ExternalLink size={11}/></a>
+                            <a href="https://plasmodb.org/plasmo/app/record/gene/PF3D7_0417200" target="_blank" rel="noreferrer">Open PlasmoDB gene record <ExternalLink size={11}/></a>
+                          </div>
+                        </div>
+                      ))}
+                      {proteinResult.referenceTargets.flatMap(target => target.referenceWarnings || []).map((warning, index) => (
+                        <p className="stage-note" key={`reference-warning-${index}`}>{warning}</p>
+                      ))}
+                    </div>
+                  )}
+                  {proteinResult.proteins.length === 0 && (proteinResult.uniprotNameCandidates || []).length === 0 && (proteinResult.referenceTargets || []).length === 0 && (
                     <div className="chembl-empty-state">
                       <strong>{proteinResult.unclassifiedTargets?.length || proteinResult.targetLookupWarnings?.length ? "Protein-target classification is incomplete." : "No single-protein target was identified in the retrieved evidence."}</strong>
                       <p>ChEMBL returned {proteinResult.malariaActivityRetrieved} <em>P. falciparum</em>-associated record(s) across {proteinResult.targetCount} target entity/entities, but the available records did not produce a verifiable single-protein target or an exact UniProtKB name match. This is not evidence that no protein target exists.</p>

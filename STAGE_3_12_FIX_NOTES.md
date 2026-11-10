@@ -26,3 +26,16 @@
 - A protein-complex target is not counted as a single-protein target; constituent proteins are shown as complex subunits.
 - Organism-level targets are not treated as proteins.
 - Missing target metadata, capped scans and failed pagination are not presented as negative biological evidence.
+
+## Stage 3.12.1 — local dev NCBI route fix
+- `vite.config.js` now mounts all four `/api/*` routes (chembl, uniprot, ncbi, unichem) using the same Netlify handlers as production. Before, `/api/ncbi` did not exist in `npm run dev`, so the DHFR-TS RefSeq request returned `index.html` ("HTML page instead of JSON").
+- Added `test/ncbi-proxy.test.js` and `test/dev-proxy-parity.test.js` (every netlify.toml `/api` redirect must have a dev route). 64 tests pass; lint and build pass.
+- Removed an unused variable that failed ESLint.
+- Restart `npm run dev` after replacing files.
+- Removed `export default { handler }` from `netlify/functions/chembl.js` and `unichem.js`. With a default export Netlify treats the file as a v2 function and fails with `TypeError: D.handler is not a function` (seen under `netlify dev`). All four functions now use only the named `handler` export; a test enforces this.
+
+## Stage 3.12.2 — evidence clarity
+- Evidence rows now carry a heuristic band (`describeEvidenceRecord`): percent inhibition < 50 %, IC50/Ki ≥ 10 µM or reported as ">" are labelled "tested, weak or inactive"; ≤ 1 µM "potent in this assay". Raw values are never hidden. Missing values show "value not reported" instead of a bare unit.
+- Stage 2 non-exact candidates now compare PubChem vs ChEMBL InChIKeys (`compareInchiKeys`): a differing connectivity block is explained as a likely tautomer/salt/charge/drawing difference; a stereo-only difference is stated as such.
+- The PfDHFR-TS section states that the mapping is a literature reference built in for pyrimethamine only.
+- 67 tests, lint and build pass.
