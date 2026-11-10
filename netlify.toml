@@ -16,6 +16,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/ncbi"
+  to = "/.netlify/functions/ncbi"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/unichem"
   to = "/.netlify/functions/unichem"
   status = 200

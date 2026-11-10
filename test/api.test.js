@@ -1388,3 +1388,21 @@ test("retrievePfProteinTargets retries a failed later page once and preserves ea
     clearApiSessionCache();
   }
 });
+
+import { describeEvidenceRecord, compareInchiKeys } from "../src/api.js";
+
+test("describeEvidenceRecord flags weak/inactive results and hides bare units", () => {
+  assert.equal(describeEvidenceRecord({ standardType: "Inhibition", units: "%" }).text, "Inhibition: value not reported");
+  assert.equal(describeEvidenceRecord({ standardType: "Inhibition", value: 3.31, relation: "=", units: "%" }).band, "inactive-or-weak");
+  assert.equal(describeEvidenceRecord({ standardType: "IC50", value: 10000, relation: ">", units: "nM" }).band, "inactive-or-weak");
+  assert.equal(describeEvidenceRecord({ standardType: "Ki", value: 27000, relation: "=", units: "nM" }).band, "inactive-or-weak");
+  assert.equal(describeEvidenceRecord({ standardType: "IC50", value: 50, relation: "=", units: "nM" }).band, "potent");
+  assert.equal(describeEvidenceRecord({ standardType: "IC50", value: 0.13, relation: "=", units: "ug.mL-1" }).band, "unclassified");
+  assert.equal(describeEvidenceRecord({ standardType: "IC50", value: 3.2, relation: "=", units: "uM" }).band, "moderate");
+});
+
+test("compareInchiKeys separates tautomer/connectivity from stereo-only differences", () => {
+  assert.equal(compareInchiKeys("BSJMWHQBCZFXBR-UHFFFAOYSA-N", "KUCQYCKVKVOKAY-CTYIDZIISA-N"), "connectivity-differs");
+  assert.equal(compareInchiKeys("KUCQYCKVKVOKAY-UHFFFAOYSA-N", "KUCQYCKVKVOKAY-CTYIDZIISA-N"), "stereo-or-isotope-only");
+  assert.equal(compareInchiKeys("X", "Y"), "unknown");
+});

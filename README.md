@@ -63,3 +63,9 @@ Local development is for editing and testing only. The final presentation should
 - `node --test`: 60 tests passed in the assembly environment.
 - `npm run build`: not verified here because dependency installation (`npm ci`) timed out in this environment. Netlify will install dependencies during its own build; check the deploy log and resolve any reported build issue before presenting.
 - Live upstream requests and a public deployment have not yet been verified.
+
+## Curated reference-target evidence (Phase I)
+
+For Pyrimethamine (`CHEMBL36`), Stage 3 now checks whether the retrieved *P. falciparum* organism-level ChEMBL assay descriptions explicitly mention DHFR/DHFR-TS. When such records are present, the UI displays PfDHFR-TS (`CHEMBL4296323`, UniProt `Q8I1R6`, PlasmoDB `PF3D7_0417200`) in a separate **Curated reference targets** section. The ChEMBL target record and UniProt sequence are fetched through the existing cloud proxies.
+
+Important evidence distinction: these organism-level phenotypic assays remain assigned by ChEMBL to `CHEMBL364` (the organism). They are displayed as contextual supporting records, not as direct protein-binding measurements or ChEMBL single-protein assignments. The curated 3D7 target mapping is linked to the IUPHAR/BPS reference page and PlasmoDB.

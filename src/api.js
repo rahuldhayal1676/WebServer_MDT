@@ -9,6 +9,7 @@ const PUBCHEM_BASE = "https://pubchem.ncbi.nlm.nih.gov/rest/pug";
 const CHEMBL_BASE = "https://www.ebi.ac.uk/chembl/api/data";
 const CHEMBL_PROXY_PATH = "/api/chembl";
 const UNIPROT_PROXY_PATH = "/api/uniprot";
+const NCBI_PROXY_PATH = "/api/ncbi";
 const PUBCHEM_PROPERTIES = [
   "Title",
   "MolecularFormula",
@@ -2077,6 +2078,97 @@ export async function retrievePfProteinTargets(chemblId, { signal, onProgress, f
     mechanisms: pfMechanisms.filter(record => record.targetChemblId === protein.chemblId)
   }));
 
+
+  // Curated reference mapping for pyrimethamine. ChEMBL often stores
+  // phenotypic parasite-growth assays against the organism (CHEMBL364), not
+  // the molecular target. Keep this evidence separate from ChEMBL-attributed
+  // single-protein activity associations.
+  let referenceTargets = [];
+  if (moleculeId === "CHEMBL36") {
+    const dhfrEvidence = malariaActivities.filter(record =>
+      record.targetChemblId === "CHEMBL364"
+      && /\b(DHFR|dihydrofolate\s+reductase|DHFR[- ]TS|thymidylate\s+synthase)\b/i.test(record.assayDescription || "")
+    );
+    if (dhfrEvidence.length) {
+      const reference = {
+        chemblId: "CHEMBL4296323",
+        name: "Dihydrofolate reductase–thymidylate synthase",
+        targetType: "Curated reference target",
+        organism: "Plasmodium falciparum",
+        taxonId: "5833",
+        accession: "Q8I1R6",
+        gene: "dhfr-ts",
+        plasmoDbId: "PF3D7_0417200"
+      };
+      let targetMetadata = null;
+      const referenceWarnings = [];
+      try {
+        const targetUrl = new URL(`${CHEMBL_BASE}/target/${reference.chemblId}.json`);
+        const payload = await requestJson(toChemblProxyUrl(targetUrl.href), {
+          signal,
+          serviceName: "ChEMBL curated reference-target metadata",
+          useCache: !forceRefresh,
+          timeoutMs: CHEMBL_REQUEST_TIMEOUT_MS,
+          retries: 0
+        });
+        targetMetadata = parseChemblTargetResponse(payload).find(item => item.chemblId === reference.chemblId) || null;
+        if (!targetMetadata) referenceWarnings.push("ChEMBL did not return the expected reference target record.");
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        referenceWarnings.push(`ChEMBL reference-target metadata unavailable: ${error?.message || "unknown error"}`);
+      }
+      // Q8I1R6 is retained as a historical UniProt cross-reference, but UniProt
+      // currently marks that entry deleted. Retrieve the exact 3D7 protein from NCBI RefSeq.
+      let refseq = null;
+      try {
+        const payload = await requestJson(`${NCBI_PROXY_PATH}?accession=XP_001351479.1`, {
+          signal,
+          serviceName: "NCBI RefSeq protein service",
+          useCache: !forceRefresh,
+          timeoutMs: 20_000
+        });
+        if (payload?.accession !== "XP_001351479.1" || typeof payload?.sequence !== "string" || payload.sequence.length !== 608) {
+          throw new ApiError("NCBI returned an unexpected DHFR-TS RefSeq record or sequence length.", { code: "NCBI_REFSEQ_VALIDATION_FAILED" });
+        }
+        refseq = { ...payload, accession: "XP_001351479.1", sequenceSource: "NCBI RefSeq" };
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        referenceWarnings.push(`NCBI RefSeq sequence unavailable: ${error?.message || "unknown error"}`);
+      }
+      referenceTargets = [{
+        ...reference,
+        name: targetMetadata?.name || reference.name,
+        targetType: "Curated reference target (not an activity-level ChEMBL assignment)",
+        organism: targetMetadata?.organism || reference.organism,
+        accession: reference.accession,
+        uniprot: refseq,
+        sequenceError: refseq ? null : "NCBI RefSeq did not provide the 3D7 DHFR-TS sequence.",
+        accessionLabel: "HISTORICAL UNIPROT CROSS-REFERENCE (INACTIVE)",
+        sequenceSource: "NCBI RefSeq",
+        activityCount: dhfrEvidence.length,
+        mechanismCount: 0,
+        mechanisms: [],
+        evidence: dhfrEvidence.map(record => ({
+          activityId: record.activityId,
+          assayChemblId: record.assayChemblId,
+          assayDescription: record.assayDescription,
+          standardType: record.standardType,
+          relation: record.standardRelation,
+          value: record.standardValue,
+          units: record.standardUnits,
+          pchemblValue: record.pchemblValue,
+          documentChemblId: record.documentChemblId,
+          publicationYear: record.publicationYear,
+          sourceTargetChemblId: record.targetChemblId,
+          sourceTargetName: record.targetName
+        })),
+        candidateStatus: "Curated pharmacological reference: pyrimethamine is an established inhibitor of PfDHFR-TS. The linked ChEMBL records are organism-level phenotypic assays whose descriptions mention DHFR; ChEMBL assigns those records to CHEMBL364 (the organism), not to this protein. They support biological context but are not direct protein-binding measurements.",
+        evidenceSource: "Curated target reference + ChEMBL organism-level assay descriptions",
+        referenceWarnings
+      }];
+    }
+  }
+
   const countMatches = totalCount === null ? null : malariaActivities.length === totalCount;
   const activityComplete = countMatches === true && missingOffsets.length === 0;
   return {
@@ -2119,15 +2211,73 @@ export async function retrievePfProteinTargets(chemblId, { signal, onProgress, f
     proteins,
     uniprotNameCandidates,
     uniprotNameSearchWarnings,
+    referenceTargets,
+    referenceTargetCount: referenceTargets.length,
     sequenceCount: [
       ...proteins.filter(protein => protein.uniprot?.sequence),
-      ...uniprotNameCandidates.filter(protein => protein.uniprot?.sequence)
+      ...uniprotNameCandidates.filter(protein => protein.uniprot?.sequence),
+      ...referenceTargets.filter(protein => protein.uniprot?.sequence)
     ].length,
     sequenceErrors,
     retrievedAt: new Date().toISOString(),
-    source: "ChEMBL Data Web Services + UniProtKB REST API",
+    source: "ChEMBL Data Web Services + UniProtKB REST API + NCBI RefSeq",
     activitySearchUrl: firstPage.url.href,
     mechanismSearchUrl: mechanismUrl.href
   };
 }
 
+
+const POTENCY_TYPES = /^(IC50|KI|KD|EC50|GI50|MIC|IC90|EC90|LD50|CC50)$/i;
+const MOLAR_TO_NM = { pm: 0.001, nm: 1, um: 1000, "µm": 1000, "μm": 1000, mm: 1_000_000 };
+
+/**
+ * Describe one ChEMBL activity record for display. Never hides the raw value;
+ * it only adds a conservative, heuristic band so that weak/inactive
+ * measurements (for example 3% inhibition or IC50 > 10 µM) are not read as hits.
+ * Returns { text, band, note } where band is one of
+ * "not-reported" | "inactive-or-weak" | "moderate" | "potent" | "unclassified".
+ */
+export function describeEvidenceRecord(item = {}) {
+  const type = String(item.standardType || "").trim();
+  const raw = item.value;
+  const relation = String(item.relation || "").trim();
+  const units = String(item.units || "").trim();
+  const num = raw === null || raw === undefined || raw === "" ? null : Number(raw);
+  const label = type || "Measurement not specified";
+
+  if (num === null || !Number.isFinite(num)) {
+    return { text: `${label}: value not reported`, band: "not-reported", note: "No numeric value was supplied by ChEMBL for this record." };
+  }
+  const text = `${label}: ${[relation, String(raw), units].filter(Boolean).join(" ")}`;
+  const lowerBound = relation === ">" || relation === ">=";
+
+  if (units === "%" || /inhibition|activity/i.test(type) && units === "%") {
+    if (lowerBound) return { text, band: "unclassified", note: "Percent value with a lower-bound relation." };
+    if (num < 50) return { text, band: "inactive-or-weak", note: "Below 50% effect at the tested concentration; weak or inactive." };
+    return { text, band: "moderate", note: "At least 50% effect at the tested concentration; concentration is in the assay record." };
+  }
+
+  if (POTENCY_TYPES.test(type)) {
+    const factor = MOLAR_TO_NM[units.toLowerCase()];
+    if (factor) {
+      const nm = num * factor;
+      if (lowerBound) return { text, band: "inactive-or-weak", note: "Reported only as greater than the tested range; no measurable potency." };
+      if (nm >= 10_000) return { text, band: "inactive-or-weak", note: "Potency weaker than 10 µM." };
+      if (nm <= 1_000) return { text, band: "potent", note: "Potency at or below 1 µM (heuristic band)." };
+      return { text, band: "moderate", note: "Potency between 1 and 10 µM (heuristic band)." };
+    }
+    return { text, band: "unclassified", note: `Units (${units || "none"}) are not molar, so the potency band was not assigned.` };
+  }
+  return { text, band: "unclassified", note: "Measurement type is not classified by the app." };
+}
+
+/** Compare the connectivity (first) block of two InChIKeys. */
+export function compareInchiKeys(a, b) {
+  const clean = value => String(value || "").trim().toUpperCase();
+  const [ka, kb] = [clean(a), clean(b)];
+  const valid = key => /^[A-Z]{14}-[A-Z]{10}-[A-Z]$/.test(key);
+  if (!valid(ka) || !valid(kb)) return "unknown";
+  if (ka === kb) return "identical";
+  if (ka.slice(0, 14) === kb.slice(0, 14)) return "stereo-or-isotope-only";
+  return "connectivity-differs";
+}
