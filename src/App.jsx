@@ -843,7 +843,7 @@ function App() {
                     <div><span>CURATED MOA ANNOTATIONS</span><strong>{proteinResult.mechanismStatus === "unavailable" ? "Unavailable" : proteinResult.mechanismStatus === "partial" ? `${proteinResult.mechanismCount} · partial` : proteinResult.mechanismCount.toLocaleString()}</strong></div>
                     <div><span>ChEMBL-VERIFIED SINGLE PROTEINS</span><strong>{proteinResult.proteins.length.toLocaleString()}</strong></div>
                     <div><span>UNIPROT NAME-MATCHED LEADS</span><strong>{(proteinResult.uniprotNameCandidates || []).length.toLocaleString()}</strong></div>
-                    <div><span>UNIPROT SEQUENCES</span><strong>{proteinResult.sequenceCount.toLocaleString()}</strong></div>
+                    <div><span>PROTEIN SEQUENCES RETRIEVED</span><strong>{proteinResult.sequenceCount.toLocaleString()}</strong></div>
                   </div>
                   {proteinResult.activityComplete === false && (
                     <div className="error-message" role="status">
